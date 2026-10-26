@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07131f">
+  <title>RallyVision — AI Badminton Tracking & Score Counter</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="nav wrap">
+    <div class="brand">
+      <div class="logo">↗</div>
+      <span>RallyVision</span>
+    </div>
+    <div class="navBadges">
+      <span class="modelPill" id="aiModelPill">● AI Model: READY</span>
+      <span class="tag">AI COMPUTER VISION</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div>
+        <div class="eyebrow">SMART COURT · AI SHUTTLECOCK TRACKING · AUTO-COUNTER</div>
+        <h1>Play the rally.<br><span>Track every point.</span></h1>
+        <p>AI computer vision in your browser. Real-time shuttlecock trajectory tracking, net crossing detection, on-net and under-net alarm, playable space boundaries, and an intelligent auto-counter with complete point logs.</p>
+        <div class="heroActions">
+          <button id="startHero">Open Match Console ↗</button>
+          <button class="secondary" id="howBtn">How AI Tracking Works</button>
+        </div>
+      </div>
+      <div class="courtArt">
+        <div class="court">
+          <div class="center"></div>
+          <div class="net"></div>
+          <div class="player p1"></div>
+          <div class="player p2"></div>
+          <div class="shuttle">🏸</div>
+        </div>
+        <div class="floatLabel">REAL-TIME TRAJECTORY & NET CROSSING ENGINE</div>
+      </div>
+    </section>
+
+    <!-- Match Console Header -->
+    <div class="sectionTitle" id="match">
+      <div>
+        <div class="eyebrow">MATCH CONSOLE</div>
+        <h2>Scoreboard & Court Vision</h2>
+      </div>
+      <div class="statusBadges">
+        <span class="badge state-idle" id="aiStateBadge">AI: IDLE</span>
+        <span class="status" id="matchStatus">Ready to start</span>
+      </div>
+    </div>
+
+    <!-- Workspace Layout -->
+    <section class="workspace">
+      <!-- LEFT PANEL: CAMERA, VISION, CALIBRATION, SIMULATOR -->
+      <div class="panel">
+        <div class="panelHead">
+          <strong>01 / Court Media & AI Vision Feed</strong>
+          <span class="status" id="cameraStatus">Camera off</span>
+        </div>
+        <div class="panelBody">
+          <!-- Input Source Tabs (Live Camera vs Upload Media) -->
+          <div class="sourceTabs">
+            <button class="sourceTab active" id="tabCameraBtn">📹 Live Court Camera</button>
+            <button class="sourceTab" id="tabUploadBtn">📁 Upload Match Video</button>
+          </div>
+
+          <!-- Video & Canvas Area -->
+          <div class="videoWrap" id="videoWrap">
+            <!-- Floating Alarm & Notification Banner -->
+            <div id="alarmBanner" class="alarmBanner toast-info hidden"></div>
+
+            <div class="placeholder" id="placeholder">
+              <div class="cam" id="placeholderIcon">▣</div>
+              <strong id="placeholderTitle">Your court will appear here</strong>
+              <div class="note" id="placeholderNote">Enable the camera or upload a match video to track shuttlecock movement, net crossings, and court falls.</div>
+            </div>
+            <video id="video" autoplay muted playsinline class="hidden"></video>
+            <canvas id="overlay"></canvas>
+          </div>
+
+          <!-- CONTAINER A: LIVE CAMERA CONTROLS -->
+          <div id="cameraControlsBox">
+            <!-- Primary Camera Buttons -->
+            <div class="controls">
+              <button id="startCamera">Enable Camera</button>
+              <button class="secondary" id="stopCamera" disabled>Stop</button>
+              <button class="secondary" id="wideToggle">Wide-angle: OFF</button>
+            </div>
+
+            <div class="controlRow">
+              <label for="cameraSelect">Camera device</label>
+              <select id="cameraSelect">
+                <option value="">Default camera</option>
+              </select>
+            </div>
+
+            <div class="controlRow">
+              <label for="viewMode">Preview framing</label>
+              <select id="viewMode">
+                <option value="contain">Fit full court</option>
+                <option value="cover">Fill preview</option>
+              </select>
+            </div>
+
+            <div class="controlRow">
+              <label for="visionModeSelect">Display view mode</label>
+              <select id="visionModeSelect">
+                <option value="normal">Normal (Live Video + HUD)</option>
+                <option value="enhanced">Enhanced (Contrast & Sharpness Boost)</option>
+                <option value="mask">AI Mask (Shuttlecock & Motion Mask)</option>
+              </select>
+            </div>
+
+            <!-- Hardware Camera Controls (if supported by webcam) -->
+            <div id="hwExpModeRow" class="controlRow hidden">
+              <label for="hwExpMode">Hardware exposure mode</label>
+              <select id="hwExpMode">
+                <option value="continuous">Continuous Auto</option>
+                <option value="manual">Manual Exposure</option>
+              </select>
+            </div>
+
+            <div id="hwExposureRow" class="rangeRow hidden">
+              <label for="hwExposure">Hardware EV bias</label>
+              <input id="hwExposure" type="range" min="-2" max="2" step="0.1" value="0">
+              <span class="rangeVal" id="hwExposureVal">0.0 EV</span>
+            </div>
+          </div>
+
+          <!-- CONTAINER B: UPLOAD MEDIA & PLAYBACK CONTROLS -->
+          <div id="uploadControlsBox" class="hidden">
+            <!-- Drop Zone -->
+            <div class="dropZone" id="dropZone">
+              <input type="file" id="mediaUploadInput" accept="video/mp4,video/webm,video/quicktime,video/x-m4v,video/*" class="hidden">
+              <div class="dropIcon">📤</div>
+              <div class="dropTitle">Drag & drop match video here, or <span class="dropLink">browse files</span></div>
+              <div class="dropNote">Supported: MP4, WebM, MOV, M4V. Video runs client-side inside your browser.</div>
+            </div>
+
+            <!-- Media Info Bar -->
+            <div class="mediaInfoBar hidden" id="mediaInfoBar">
+              <div>
+                <span>FILE: </span>
+                <span class="mediaFileName" id="mediaFileNameDisplay">-</span>
+              </div>
+              <div style="color:var(--cyan);font-weight:700;" id="mediaResolutionDisplay">-</div>
+            </div>
+
+            <!-- Video Scrubber & Playback Controls -->
+            <div class="mediaControls hidden" id="mediaControls">
+              <div class="scrubberRow">
+                <input type="range" id="mediaTimeline" min="0" max="100" step="0.1" value="0">
+                <span id="mediaTimeDisplay" class="timeDisplay">00:00 / 00:00</span>
+              </div>
+              <div class="mediaBtnRow">
+                <button class="secondary" id="mediaBack5s" title="Back 5s">« 5s</button>
+                <button class="secondary" id="mediaPrevFrame" title="Step Back 1 Frame">|◀</button>
+                <button id="mediaPlayPause" style="min-width: 95px;">▶ Play</button>
+                <button class="secondary" id="mediaNextFrame" title="Step Forward 1 Frame">▶|</button>
+                <button class="secondary" id="mediaFwd5s" title="Forward 5s">5s »</button>
+
+                <div class="speedControl">
+                  <label for="mediaSpeedSelect">Speed:</label>
+                  <select id="mediaSpeedSelect">
+                    <option value="0.25">0.25x (Super Slow)</option>
+                    <option value="0.5">0.5x (Slow-Mo)</option>
+                    <option value="1" selected>1.0x (Normal)</option>
+                    <option value="1.5">1.5x (Fast)</option>
+                    <option value="2">2.0x (Double)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- OUTPUT & EXPORT OPTIONS BOX -->
+          <div class="subSection outputBox">
+            <div class="subSectionTitle">
+              <span>📥 Get Output & Export</span>
+              <span class="badge" style="background:#065f46;color:#6ee7b7;">EXPORT CENTER</span>
+            </div>
+            <p class="note">Download the AI-annotated match video with trajectories, net lines, and scores, capture snapshots, or export match reports.</p>
+
+            <div class="outputActions">
+              <button id="recordOutputBtn" class="outputBtn recordBtn">
+                <span class="recDot"></span> <span id="recordBtnText">Record & Export Annotated Video</span>
+              </button>
+              <button id="snapshotBtn" class="secondary outputBtn">
+                📸 Capture Snapshot (PNG)
+              </button>
+              <button id="copySummaryBtn" class="secondary outputBtn">
+                📋 Copy Match Summary
+              </button>
+            </div>
+
+            <div id="recordingTimerBadge" class="recordingBadge hidden">
+              <span class="blinkingRedDot"></span> RECORDING OUTPUT VIDEO: <span id="recTimeVal">00:00</span> (Click "Stop & Save Video" to download)
+            </div>
+          </div>
+
+          <!-- Software Image Enhancement Controls -->
+          <div class="subSection">
+            <div class="subSectionTitle">
+              <span>Shuttlecock Sharpness & Contrast Boost</span>
+              <span class="badge badge-ai">VISION FILTERS</span>
+            </div>
+            <p class="note">Fine-tune software exposure, edge sharpness, and luminance threshold so fast shuttlecocks stand out sharply against the court.</p>
+
+            <div class="rangeRow">
+              <label for="softContrast">Contrast Booster</label>
+              <input id="softContrast" type="range" min="0.8" max="2.6" step="0.05" value="1.45">
+              <span class="rangeVal" id="softContrastVal">1.5x</span>
+            </div>
+
+            <div class="rangeRow">
+              <label for="softBrightness">Brightness</label>
+              <input id="softBrightness" type="range" min="-60" max="60" step="2" value="10">
+              <span class="rangeVal" id="softBrightnessVal">+10%</span>
+            </div>
+
+            <div class="rangeRow">
+              <label for="softSharpness">Edge Sharpness</label>
+              <input id="softSharpness" type="range" min="0" max="100" step="5" value="65">
+              <span class="rangeVal" id="softSharpnessVal">65%</span>
+            </div>
+
+            <div class="controlRow">
+              <label for="shuttleColor">Shuttlecock color</label>
+              <select id="shuttleColor">
+                <option value="white">White Feathers / Nylon (Default)</option>
+                <option value="yellow">Yellow / Fluorescent</option>
+                <option value="neon">Neon Green</option>
+              </select>
+            </div>
+
+            <div class="rangeRow">
+              <label for="lumaThresh">Luma Threshold</label>
+              <input id="lumaThresh" type="range" min="140" max="245" step="1" value="200">
+              <span class="rangeVal" id="lumaThreshVal">200</span>
+            </div>
+
+            <div class="rangeRow">
+              <label for="motionThresh">Motion Sensitivity</label>
+              <input id="motionThresh" type="range" min="8" max="45" step="1" value="18">
+              <span class="rangeVal" id="motionThreshVal">18</span>
+            </div>
+          </div>
+
+          <!-- Playable Space & Virtual Net Calibration -->
+          <div class="subSection">
+            <div class="subSectionTitle">
+              <span>02 / Playable Court Space & Virtual Net</span>
+              <button class="secondary" id="toggleHandlesBtn" style="font-size:11px;padding:5px 9px;">Interactive Drag Handles: ON</button>
+            </div>
+            <p class="note">Drag the 4 green court corners and blue virtual net posts directly on the video canvas, or use the quick presets below.</p>
+
+            <div class="calibGrid">
+              <button class="secondary" id="presetDoubles">Preset Doubles Court</button>
+              <button class="secondary" id="presetSingles">Preset Singles Court</button>
+            </div>
+
+            <div class="controls" style="margin-top:4px;">
+              <button class="secondary" id="alignNetMidBtn" style="width:100%;font-size:12px;">Auto-Align Virtual Net to Court Center</button>
+            </div>
+
+            <div class="statusBox" id="calibStatus">Standard doubles court active (13.40m × 6.10m). Net height reference: 1.524m.</div>
+
+            <div class="controlRow">
+              <label for="netHeightInput">Virtual Net height (m)</label>
+              <input id="netHeightInput" type="number" min="1.40" max="1.60" step="0.001" value="1.524">
+            </div>
+
+            <div class="controlRow">
+              <label for="courtLengthInput">Court length (m)</label>
+              <input id="courtLengthInput" type="number" min="10" max="16" step="0.1" value="13.40">
+            </div>
+
+            <div class="controlRow">
+              <label for="courtWidthInput">Court width (m)</label>
+              <input id="courtWidthInput" type="number" min="4" max="8" step="0.1" value="6.10">
+            </div>
+          </div>
+
+          <!-- Interactive AI Simulator Station -->
+          <div class="subSection">
+            <div class="subSectionTitle">
+              <span>AI Simulator & Testing Station</span>
+              <span class="badge" style="background:#2e1065;color:#c084fc;">TEST LAB</span>
+            </div>
+            <p class="note">Test net alarms, crossing events, and auto-scoring instantly even without players on court.</p>
+
+            <div class="calibGrid">
+              <button class="secondary" id="simRallyClean">⚡ Clean Rally (Cross & In)</button>
+              <button class="secondary" id="simRallyNetFault">🚨 Hit Net (Alarm)</button>
+              <button class="secondary" id="simRallyUnderNet">🚨 Under Net (Alarm)</button>
+              <button class="secondary" id="simRallyOut">⚡ Out of Bounds</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL: SCOREBOARD, AUTO-COUNTER, AUDIO ALARMS, MATCH HISTORY -->
+      <aside class="panel">
+        <div class="panelHead">
+          <strong>03 / Live Match Scoreboard</strong>
+          <span class="tag" id="targetGoalBadge">21 POINTS GOAL</span>
+        </div>
+        <div class="panelBody">
+          <!-- Main Scoreboard Cards -->
+          <div class="scoreboard">
+            <!-- Player A -->
+            <div class="score active" id="card1">
+              <div class="scoreName">TEAM / SIDE A</div>
+              <input id="name1" class="playerNameInput" aria-label="Player A name" value="Player A">
+              <div class="points" id="score1">0</div>
+              <div class="scoreActions">
+                <button id="plus1" aria-label="Add point to player A">+ Point</button>
+                <button class="secondary" id="minus1" aria-label="Remove point from player A">−</button>
+              </div>
+            </div>
+
+            <!-- Player B -->
+            <div class="score" id="card2">
+              <div class="scoreName">TEAM / SIDE B</div>
+              <input id="name2" class="playerNameInput" aria-label="Player B name" value="Player B">
+              <div class="points" id="score2">0</div>
+              <div class="scoreActions">
+                <button id="plus2" aria-label="Add point to player B">+ Point</button>
+                <button class="secondary" id="minus2" aria-label="Remove point from player B">−</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sets & Match Goal Chips -->
+          <div class="sets">
+            <div class="setChip">Sets A: <b id="sets1">0</b></div>
+            <div class="setChip">Sets B: <b id="sets2">0</b></div>
+            <div class="setChip targetChip">Game to <span id="chipGoalVal">21</span></div>
+          </div>
+
+          <div class="controls">
+            <button class="secondary" id="undoBtn">↺ Undo Point</button>
+            <button class="secondary danger" id="resetBtn">Reset Match</button>
+          </div>
+
+          <!-- Auto-Counter & Goal Configuration -->
+          <div class="subSection">
+            <div class="subSectionTitle">
+              <span>04 / Auto-Counter & Custom Goal</span>
+              <span class="badge" id="autoScoreStatus" style="background:#14532d;color:#86efac;">Active</span>
+            </div>
+
+            <div class="controlRow">
+              <label for="autoScore">Auto-count on fall</label>
+              <input id="autoScore" type="checkbox" checked style="width:20px;height:20px;accent-color:#c7ff5e">
+            </div>
+
+            <div class="controlRow">
+              <label for="goalInput">Custom Points Goal</label>
+              <input id="goalInput" type="number" min="1" max="99" value="21">
+            </div>
+
+            <div class="controlRow">
+              <label for="setsToWinSelect">Match length</label>
+              <select id="setsToWinSelect">
+                <option value="1">1 Set (Single Game)</option>
+                <option value="2" selected>Best of 3 Sets</option>
+                <option value="3">Best of 5 Sets</option>
+              </select>
+            </div>
+
+            <div class="controlRow">
+              <label for="scoringRuleSelect">Point attribution rule</label>
+              <select id="scoringRuleSelect">
+                <option value="standard" selected>Standard BWF (Opponent scores on court fall)</option>
+                <option value="direct">Direct Fall (Side where it falls scores)</option>
+              </select>
+            </div>
+
+            <div class="controlRow">
+              <label for="autoModeSelect">Auto-award mode</label>
+              <select id="autoModeSelect">
+                <option value="instant" selected>Instant auto-award</option>
+                <option value="prompt3s">3s Confirmation window</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Audio Alarms & Umpire Voice -->
+          <div class="subSection">
+            <div class="subSectionTitle">
+              <span>05 / Net Fault Alarm & Voice</span>
+              <button class="secondary" id="testAlarmBtn" style="font-size:11px;padding:4px 8px;">Test Alarm 🔔</button>
+            </div>
+
+            <div class="controlRow">
+              <label for="netAlarmToggle">Net Alarm (on/under net)</label>
+              <input id="netAlarmToggle" type="checkbox" checked style="width:20px;height:20px;accent-color:#ef4444">
+            </div>
+
+            <div class="controlRow">
+              <label for="soundToggle">Sound FX & Chimes</label>
+              <input id="soundToggle" type="checkbox" checked style="width:20px;height:20px;accent-color:#c7ff5e">
+            </div>
+
+            <div class="controlRow">
+              <label for="voiceToggle">Umpire Voice Announcement</label>
+              <input id="voiceToggle" type="checkbox" checked style="width:20px;height:20px;accent-color:#62e6df">
+            </div>
+
+            <div class="rangeRow">
+              <label for="volumeSlider">Volume</label>
+              <input id="volumeSlider" type="range" min="0" max="100" step="5" value="80">
+              <span class="rangeVal" id="volumeVal">80%</span>
+            </div>
+          </div>
+
+          <!-- Detection Status & Player Pose -->
+          <div class="subSection">
+            <div class="subSectionTitle">
+              <span>Detection Status</span>
+            </div>
+            <div class="statusBox" id="detectionStatus">AI models ready. Camera disabled.</div>
+
+            <div class="controlRow">
+              <label for="detectToggle">Player Pose tracking (MediaPipe)</label>
+              <input id="detectToggle" type="checkbox" checked style="width:20px;height:20px;accent-color:#c7ff5e">
+            </div>
+          </div>
+
+          <!-- Complete Point-by-Point Record & Stats -->
+          <div class="subSection">
+            <div class="subSectionTitle">
+              <span>06 / Complete Match Record & Logs</span>
+              <div style="display:flex;gap:4px;">
+                <button class="secondary" id="exportCsvBtn" style="font-size:11px;padding:4px 8px;">Export CSV</button>
+                <button class="secondary" id="exportJsonBtn" style="font-size:11px;padding:4px 8px;">JSON</button>
+              </div>
+            </div>
+
+            <div class="analyticsGrid">
+              <div class="analyticsCard">
+                <div class="num" id="totalRalliesStat">0</div>
+                <div class="lbl">Total Points</div>
+              </div>
+              <div class="analyticsCard">
+                <div class="num" id="avgShotsStat">0.0</div>
+                <div class="lbl">Avg Shots</div>
+              </div>
+              <div class="analyticsCard">
+                <div class="num" id="netFaultsStat">0</div>
+                <div class="lbl">Net Faults</div>
+              </div>
+              <div class="analyticsCard">
+                <div class="num" id="inOutStat">0/0</div>
+                <div class="lbl">In / Out</div>
+              </div>
+            </div>
+
+            <div class="historyWrap">
+              <table class="historyTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Time</th>
+                    <th>Winner</th>
+                    <th>Score</th>
+                    <th>Event Details</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                  <tr>
+                    <td colspan="6" style="text-align:center;color:#6b7280;padding:18px;">No points recorded yet. Points will appear here automatically when the shuttlecock falls.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="footer">
+      <span>RallyVision · AI Computer Vision Badminton Tracking & Auto-Score</span>
+      <span>Browser-native Web Audio & AI processing. No video uploaded.</span>
+    </footer>
+  </main>
+
+  <!-- Application Entry Point -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
